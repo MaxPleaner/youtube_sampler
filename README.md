@@ -20,7 +20,7 @@ a tampermonkey script to sample youtube videos
 
 **Converting to audio**
 
-I wanted this to download just audio from the browser, but I couldn't figure it out (see [stackoverflow](https://stackoverflow.com/questions/66928752/audio-recording-in-javascript-on-chrome-always-sends-video-ogg-to-the-server)) But, it's not such a big deal, because webm can be converted to wav very easily:
+I wanted this to download just audio from the browser, but I couldn't figure it out (see [stackoverflow](https://stackoverflow.com/questions/67085323/capture-a-html5-video-players-audio-output)) But, it's not such a big deal, because webm can be converted to wav very easily:
 
 ```
 # converts webm => wav
