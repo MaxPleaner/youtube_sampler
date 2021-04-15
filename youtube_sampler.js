@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Youtube Sampler
-// @namespace    http:/github.com/maxpleaner/youtube_sampler
+// @namespace    http://tampermonkey.net/
 // @version      0.1
-// @description  sample youtube videos 
-// @author       Max Pleaner
+// @description  try to take over the world!
+// @author       You
 // @match        https://www.youtube.com/watch*
 // @icon         https://www.google.com/s2/favicons?domain=tampermonkey.net
 // @grant        none
@@ -27,7 +27,7 @@
 
 	// loads attributes from the youtube video player
 	var video, startTime, endTime;
-	function initVideo () {hi
+	function initVideo () {
 		var $video = $("video")
 		video = $video[0]
 
@@ -171,7 +171,7 @@
 	  let recorder = new MediaRecorder(stream, { mimeType: mediaType });
 	  let data = [];
 
-	  recorder.ondataavailable = event => data.push(event.data);
+	  recorder.ondataavailable = (event) => data.push(event.data);
 	  recorder.start();
 	  log(recorder.state + " for " + (lengthInMS/1000) + " seconds...");
 
@@ -215,7 +215,10 @@
 			    $downloadResultBtn.css("display", "inline")
 			    $downloadResultBtn.trigger("click")
 			  })
-			  .catch((e) => { debugger });
+			  .catch((e) => {
+			  	console.dir(e)
+			  	alert("Error. Check console.")
+			  });
 		})
 	}
 
