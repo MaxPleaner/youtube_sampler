@@ -4,7 +4,7 @@ a tampermonkey script to sample youtube videos
 **Installation**
 
 1. Install [Tampermonkey Chrome Extension](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)
-    1. I haven't tested this on other browsers. It would probably work fine if they support MediaRecorder with `video/webm`
+    1. I haven't tested this on other browsers. It should work fine if they support MediaRecorder, however the media type (`video/webm`) might need to be changed.
   
 2. Press "Create a new script" and paste in the contents of [youtube_sampler.js](https://github.com/MaxPleaner/youtube_sampler/blob/main/youtube_sampler.js). Make sure to read it first to check that it's nothing evil 😉. Control/Command + S to save and voila - you've done it.
 
