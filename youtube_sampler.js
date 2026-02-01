@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Sampler
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Record clips from YouTube videos
 // @author       You
 // @match        https://www.youtube.com/watch*
@@ -50,15 +50,14 @@
             position: 'fixed', bottom: '10px', right: '10px',
             backgroundColor: 'rgba(0,0,0,0.8)', color: 'lightblue',
             border: '1px solid lightblue', borderRadius: '4px',
-            padding: '8px 12px', cursor: 'pointer', zIndex: '999999',
-            display: 'none'
+            padding: '8px 12px', cursor: 'pointer', zIndex: '999999'
         }, 'Sampler');
         document.body.appendChild(showBtn);
 
         slideContainer = createStyledElement('div', {
             position: 'fixed', bottom: '0', padding: '15px',
             backgroundColor: 'rgba(0,0,0,0.9)', zIndex: '999999',
-            width: '100%', left: '0'
+            width: '100%', left: '0', display: 'none'
         });
         slideContainer.className = 'yt-sampler-container';
 
