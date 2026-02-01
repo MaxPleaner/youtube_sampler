@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Youtube Sampler
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  try to take over the world!
+// @version      0.2
+// @description  Record clips from YouTube videos
 // @author       You
 // @match        https://www.youtube.com/watch*
 // @icon         https://www.google.com/s2/favicons?domain=tampermonkey.net
@@ -10,227 +10,159 @@
 // ==/UserScript==
 
 // Thanks to https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Recording_a_media_element
+// Updated to use vanilla JS (YouTube's Trusted Types CSP blocks jQuery loading and innerHTML)
 
 (function() {
+    var video, startTime, endTime;
+    var slideContainer, slider1, slider2, boundsText, downloadResultBtn;
 
-	function attachScript(src) {
-		var script = document.createElement('script');
-		script.setAttribute('src', src);
-		document.head.appendChild(script);
-	}
+    function initVideo() {
+        video = document.querySelector("video");
+        if (!video) return false;
+        startTime = 0;
+        endTime = video.duration;
+        return true;
+    }
 
-	// Because I'm lazy
-	function addjQuery() {
-		var src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js'
-		attachScript(src)
-	}
+    function loopVideo() {
+        video.ontimeupdate = () => {
+            if (video.currentTime > endTime) video.currentTime = startTime;
+            if (video.currentTime < startTime) video.currentTime = startTime;
+        };
+    }
 
-	// loads attributes from the youtube video player
-	var video, startTime, endTime;
-	function initVideo () {
-		var $video = $("video")
-		video = $video[0]
+    function displayTime(floatSeconds) {
+        var minutes = parseInt(floatSeconds / 60);
+        var seconds = parseInt(floatSeconds - (minutes * 60));
+        return minutes + ":" + seconds.toString().padStart(2, '0');
+    }
 
-		startTime = 0
-		endTime = video.duration
-	}
+    function createStyledElement(tag, styles, text) {
+        var el = document.createElement(tag);
+        Object.assign(el.style, styles);
+        if (text) el.textContent = text;
+        return el;
+    }
 
-	function loopVideo () {
-		video.ontimeupdate = () => {
-			if (video.currentTime > endTime) {
-				video.currentTime = startTime
-			}
-			if (video.currentTime < startTime) {
-				video.currentTime = startTime
-			}
-		}
-	}
+    function addUIElements() {
+        slideContainer = createStyledElement('div', {
+            position: 'fixed', bottom: '0', padding: '15px',
+            backgroundColor: 'rgba(0,0,0,0.9)', zIndex: '999999',
+            width: '100%', left: '0'
+        });
+        slideContainer.className = 'yt-sampler-container';
 
-	function initUI ($slider1, $slider2, $boundsText, $downloadResultBtn) {
-		$slider1.find("input").attr("max", video.duration).val(0)
-		$slider2.find("input").attr("max", video.duration).val(video.duration)
-		$boundsText.text(`${displayTime(startTime)} - ${displayTime(endTime)}`)
-		$downloadResultBtn.css("display", "none")
-	}
+        var recordBtn = createStyledElement('a', {
+            color: 'lightblue', textDecoration: 'underline',
+            cursor: 'pointer', marginRight: '10px'
+        }, 'record');
+        recordBtn.id = 'client-download-btn';
+        recordBtn.href = '#';
+        slideContainer.appendChild(recordBtn);
 
-	function displayTime (floatSeconds) {
-		var minutes = parseInt(floatSeconds / 60)
-		var seconds = parseInt(floatSeconds - (minutes * 60))
-		// var ms = floatSeconds - (minutes * 60) - seconds
-		// var roundedMs = parseInt(ms * 100)
+        downloadResultBtn = createStyledElement('a', {
+            color: 'lightblue', textDecoration: 'underline',
+            cursor: 'pointer', display: 'none'
+        }, 'result');
+        downloadResultBtn.id = 'client-download-result-btn';
+        slideContainer.appendChild(downloadResultBtn);
+        slideContainer.appendChild(document.createElement('br'));
 
-		return `${minutes}:${seconds}`
-	}
+        boundsText = createStyledElement('p', { color: 'white', margin: '5px 0' },
+            displayTime(startTime) + ' - ' + displayTime(endTime));
+        slideContainer.appendChild(boundsText);
 
-	function log(msg) {
-	  // logElement.innerHTML += msg + "\n";
-	  console.log(msg)
-	}
+        // Slider 1
+        var s1Div = document.createElement('div');
+        s1Div.appendChild(createStyledElement('label', { color: 'white', width: '50px', display: 'inline-block' }, 'Start: '));
+        slider1 = document.createElement('input');
+        Object.assign(slider1, { type: 'range', step: '0.1', min: '0', max: String(video.duration), value: '0' });
+        slider1.style.width = '80%';
+        s1Div.appendChild(slider1);
+        slideContainer.appendChild(s1Div);
 
-	var containerStyle, sliderStyle, boundsTextStyle, downloadBtnStyle,
-	    $slideContainer, $slider1, $slider2, $sliders, $boundsText,
-	    $downloadResultBtn
-	function addUIElements () {
-		containerStyle = `
-		    position: fixed;
-			bottom: 50px;
-			padding: 10px;
-			height: 50px;
-			background-color: black;
-			z-index: 100;
-			width: 100%;
-		`
+        // Slider 2
+        var s2Div = document.createElement('div');
+        s2Div.appendChild(createStyledElement('label', { color: 'white', width: '50px', display: 'inline-block' }, 'End: '));
+        slider2 = document.createElement('input');
+        Object.assign(slider2, { type: 'range', step: '0.1', min: '0', max: String(video.duration), value: String(video.duration) });
+        slider2.style.width = '80%';
+        s2Div.appendChild(slider2);
+        slideContainer.appendChild(s2Div);
 
-		sliderStyle = `
-			width: 90%;
-		`
+        document.body.appendChild(slideContainer);
+    }
 
-		boundsTextStyle = `
-			color: white;
-		`
+    function addUIEventHandlers() {
+        slider1.addEventListener('input', function() {
+            startTime = Math.min(parseFloat(slider1.value), endTime - 0.1);
+            slider1.value = startTime;
+            video.currentTime = startTime;
+            boundsText.textContent = displayTime(startTime) + ' - ' + displayTime(endTime);
+        });
+        slider2.addEventListener('input', function() {
+            endTime = Math.max(parseFloat(slider2.value), startTime + 0.1);
+            slider2.value = endTime;
+            boundsText.textContent = displayTime(startTime) + ' - ' + displayTime(endTime);
+        });
+    }
 
-		downloadBtnStyle = `
-			color: lightblue;
-			text-decoration: italic;
-		`
+    function addPageChangeListener() {
+        var currentPage = window.location.href;
+        setInterval(() => {
+            if (currentPage != window.location.href) {
+                currentPage = window.location.href;
+                setTimeout(() => {
+                    if (initVideo()) {
+                        slider1.max = String(video.duration);
+                        slider1.value = '0';
+                        slider2.max = String(video.duration);
+                        slider2.value = String(video.duration);
+                        startTime = 0;
+                        endTime = video.duration;
+                        boundsText.textContent = displayTime(startTime) + ' - ' + displayTime(endTime);
+                        downloadResultBtn.style.display = 'none';
+                    }
+                }, 2000);
+            }
+        }, 2000);
+    }
 
-		$slideContainer = $(`
-			<div class="slidecontainer" style="${containerStyle}">
-				<!-- <a id="server-download-btn" style="${downloadBtnStyle}" href='#'>download on server</a><br> -->
-				<a id="client-download-btn" style="${downloadBtnStyle}" href='#'>record</a><br>
-				<a id="client-download-result-btn" style="${downloadBtnStyle}; display: none;" href='#'>result</a>
-				<p style="${boundsTextStyle}" id="bounds-text"></p>
-			</div>
-		`)
+    function addDownloadButtonListener(mediaType) {
+        document.getElementById('client-download-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            video.currentTime = startTime;
+            video.play();
 
-		$slider1 = $(`
-		  <div>
-		    <input type="range" step="1" style="${sliderStyle}" min="0" max="${video.duration}" value="0" class="slider" id="myRange">
-		    <br>
-		  </div>
-		`)
+            var recorder = new MediaRecorder(video.captureStream(), { mimeType: mediaType });
+            var data = [];
+            recorder.ondataavailable = (ev) => data.push(ev.data);
+            recorder.start();
+            console.log("Recording for " + (endTime - startTime) + " seconds...");
 
-		$slider2 = $(`
-		  <div>
-		    <input type="range" step="1" style="${sliderStyle}" min="0" max="${video.duration}" value="${video.duration}" class="slider" id="myRange">
-		    <br>
-		  </div>
-		`)
+            setTimeout(function() {
+                recorder.stop();
+                recorder.onstop = function() {
+                    video.pause();
+                    console.log("Recording done");
+                    var blob = new Blob(data, { type: mediaType });
+                    downloadResultBtn.href = URL.createObjectURL(blob);
+                    downloadResultBtn.download = (prompt("title?") || "clip") + ".webm";
+                    downloadResultBtn.style.display = "inline";
+                    downloadResultBtn.click();
+                };
+            }, (endTime - startTime) * 1000);
+        });
+    }
 
-		$sliders = $slideContainer.append($slider1).append($slider2)
-		$boundsText = $slideContainer.find("#bounds-text")
-		$boundsText.text(`${displayTime(startTime)} - ${displayTime(endTime)}`)
-
-		$("ytd-video-primary-info-renderer").append($sliders)
-
-		$downloadResultBtn = $("#client-download-result-btn")
-	}
-
-	function addPageChangeListener () {
-		var currentPage = window.location.href
-		setInterval(() => {
-			if (currentPage != window.location.href) {
-				currentPage = window.location.href
-				initVideo()
-				initUI($slider1, $slider2, $boundsText, $downloadResultBtn)
-			}
-		}, 2000)
-	}
-
-	function addUIEventHandlers () {
-		var $input1 = $slider1.find("input")
-		$input1.on("change input", () => {
-			var newStart = parseFloat($input1.val())
-			if (newStart >= endTime) {
-		    newStart = endTime
-				$input1.val(newStart)
-			}
-			startTime = newStart
-			video.currentTime = startTime
-			$boundsText.text(`${displayTime(startTime)} - ${displayTime(endTime)}`)
-		})
-
-		var $input2 = $slider2.find("input")
-		$input2.on("change input", () => {
-			var newEnd = parseFloat($input2.val())
-			if (newEnd <= startTime) {
-				newEnd = startTime
-				$input2.val(newEnd)
-			}
-			endTime = newEnd
-			// video.currentTime = startTime
-			$boundsText.text(`${displayTime(startTime)} - ${displayTime(endTime)}`)
-		})
-	}
-
-	function wait(delayInMS) {
-	  return new Promise(resolve => setTimeout(resolve, delayInMS));
-	}
-
-	function startRecording(stream, lengthInMS, mediaType) {
-	  let recorder = new MediaRecorder(stream, { mimeType: mediaType });
-	  let data = [];
-
-	  recorder.ondataavailable = (event) => data.push(event.data);
-	  recorder.start();
-	  log(recorder.state + " for " + (lengthInMS/1000) + " seconds...");
-
-	  let stopped = new Promise((resolve, reject) => {
-	    recorder.onstop = resolve;
-	    recorder.onerror = event => reject(event.name);
-	  });
-
-	  let recorded = wait(lengthInMS).then(
-	    () => recorder.state == "recording" && recorder.stop()
-	  );
-
-	  return Promise.all([
-	    stopped,
-	    recorded
-	  ])
-	  .then(() => data);
-	}
-
-	function addDownloadButtonListener (mediaType) {
-		$("#client-download-btn").on("click", (e) => {
-			e.preventDefault()
-
-			video.currentTime = startTime
-
-			var stream = video.captureStream()
-			var durationSeconds = endTime - startTime
-
-			video.play()
-
-				startRecording(video.captureStream(), durationSeconds * 1000, mediaType)
-			  .then (recordedChunks => {
-			  	console.log(`done`)
-
-			  	video.pause()
-			    let recordedBlob = new Blob(recordedChunks, { type: mediaType });
-
-			    $downloadResultBtn[0].href = URL.createObjectURL(recordedBlob);
-			    var title = prompt("title?")
-			    $downloadResultBtn[0].download = `${title}.webm`;
-			    $downloadResultBtn.css("display", "inline")
-			    $downloadResultBtn.trigger("click")
-			  })
-			  .catch((e) => {
-			  	console.dir(e)
-			  	alert("Error. Check console.")
-			  });
-		})
-	}
-
-	addjQuery()
-
-	setTimeout(() => {
-		initVideo()
-		loopVideo()
-		addUIElements()
-		addUIEventHandlers()
-		addPageChangeListener()
-		addDownloadButtonListener("video/webm")
-	}, 2000)
-
-})(); // IIFE
+    setTimeout(function() {
+        if (initVideo()) {
+            loopVideo();
+            addUIElements();
+            addUIEventHandlers();
+            addPageChangeListener();
+            addDownloadButtonListener("video/webm");
+            console.log("Youtube Sampler initialized");
+        }
+    }, 2000);
+})();
