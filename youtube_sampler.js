@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Sampler
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  Record clips from YouTube videos
 // @author       You
 // @match        https://www.youtube.com/watch*
@@ -14,7 +14,7 @@
 
 (function() {
     var video, startTime, endTime;
-    var slideContainer, slider1, slider2, boundsText, downloadResultBtn;
+    var slideContainer, slider1, slider2, boundsText, downloadResultBtn, showBtn;
 
     function initVideo() {
         video = document.querySelector("video");
@@ -45,12 +45,41 @@
     }
 
     function addUIElements() {
+        // Show button (visible when container is hidden)
+        showBtn = createStyledElement('button', {
+            position: 'fixed', bottom: '10px', right: '10px',
+            backgroundColor: 'rgba(0,0,0,0.8)', color: 'lightblue',
+            border: '1px solid lightblue', borderRadius: '4px',
+            padding: '8px 12px', cursor: 'pointer', zIndex: '999999',
+            display: 'none'
+        }, 'Sampler');
+        document.body.appendChild(showBtn);
+
         slideContainer = createStyledElement('div', {
             position: 'fixed', bottom: '0', padding: '15px',
             backgroundColor: 'rgba(0,0,0,0.9)', zIndex: '999999',
             width: '100%', left: '0'
         });
         slideContainer.className = 'yt-sampler-container';
+
+        // Hide button
+        var hideBtn = createStyledElement('a', {
+            color: 'lightblue', textDecoration: 'underline',
+            cursor: 'pointer', marginRight: '10px'
+        }, 'hide');
+        hideBtn.href = '#';
+        hideBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            slideContainer.style.display = 'none';
+            showBtn.style.display = 'block';
+        });
+        slideContainer.appendChild(hideBtn);
+
+        // Show button click handler
+        showBtn.addEventListener('click', function() {
+            slideContainer.style.display = 'block';
+            showBtn.style.display = 'none';
+        });
 
         var recordBtn = createStyledElement('a', {
             color: 'lightblue', textDecoration: 'underline',
