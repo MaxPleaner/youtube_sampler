@@ -1,6 +1,11 @@
 # youtube_sampler
 a tampermonkey script to sample youtube videos
 
+**TODO**
+
+- [ ] Change this to a cross browser extension
+- [ ] Support downloading audio and mp4, not just webm
+
 **Installation**
 
 1. Install [Tampermonkey Chrome Extension](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en)
