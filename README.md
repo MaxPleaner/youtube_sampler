@@ -5,6 +5,7 @@ a tampermonkey script to sample youtube videos
 
 - [ ] Change this to a cross browser extension
 - [ ] Support downloading audio and mp4, not just webm
+- [ ] Make a website for it
 
 **Installation**
 
